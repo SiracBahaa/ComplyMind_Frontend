@@ -1,19 +1,19 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { validateEmail, getPasswordStrength } from '../../../utils/validators';
+import { validateEmail, validateUsername, validatePassword, getPasswordStrength } from '../../../utils/validators';
 import { useToast } from '../../../hooks/useToast';
 import Toast from '../../../components/Toast';
 import './Signup.css';
 
 export default function Signup() {
   const navigate = useNavigate();
+  const { toasts, showToast, hideToast } = useToast();
   const [formData, setFormData] = useState({
-    name: '',
+    username: '',  // ← DEĞİŞTİ: name → username
     email: '',
     password: '',
     confirmPassword: ''
   });
-  const { toasts, showToast, hideToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -25,21 +25,33 @@ export default function Signup() {
   };
 
   const validateForm = (): boolean => {
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+    // Boş alan kontrolü
+    if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
       setError('Tüm alanlar zorunludur');
       return false;
     }
 
+    // Username validasyonu (backend kuralları)
+    const usernameValidation = validateUsername(formData.username);
+    if (!usernameValidation.isValid) {
+      setError(usernameValidation.error || 'Geçersiz kullanıcı adı');
+      return false;
+    }
+
+    // Email validasyonu
     if (!validateEmail(formData.email)) {
       setError('Geçerli bir e-posta adresi giriniz');
       return false;
     }
 
-    if (formData.password.length < 6) {
-      setError('Şifre en az 6 karakter olmalıdır');
+    // Password validasyonu (backend kuralları: min 8, büyük harf, rakam, özel karakter)
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.errors[0]); // İlk hatayı göster
       return false;
     }
 
+    // Şifre eşleşme kontrolü
     if (formData.password !== formData.confirmPassword) {
       setError('Şifreler eşleşmiyor');
       return false;
@@ -58,40 +70,56 @@ export default function Signup() {
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-    console.log('Signup submitted:', {
-      name: formData.name,
-      email: formData.email,
-      password: formData.password
-    });
+    try {
+      // Backend'e gönder
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Cookie için
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email.toLowerCase().trim(),
+          password: formData.password
+        }),
+      });
 
-    localStorage.setItem('mockUser', JSON.stringify({
-      email: formData.email,
-      name: formData.name
-    }));
+      const data = await response.json();
 
-    setIsLoading(false);
-    showToast('Hesabınız başarıyla oluşturuldu!', 'success');
-    
-    setTimeout(() => {
-      navigate('/login');
+      if (!response.ok) {
+        throw new Error(data.message || 'Kayıt başarısız');
+      }
+
+      // Başarılı kayıt
+      setIsLoading(false);
+      showToast('Hesabınız başarıyla oluşturuldu!', 'success');
+      
+      setTimeout(() => {
+        navigate('/login');
       }, 2000);
-    }, 1500);
+
+    } catch (err) {
+      setIsLoading(false);
+      const errorMessage = err instanceof Error ? err.message : 'Bir hata oluştu';
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
+    }
   };
 
   const passwordStrength = getPasswordStrength(formData.password);
 
   return (
-  <div className="signup-container">
-    {toasts.map(toast => (
-      <Toast
-        key={toast.id}
-        message={toast.message}
-        type={toast.type}
-        onClose={() => hideToast(toast.id)}
-      />
-    ))}
+    <div className="signup-container">
+      {toasts.map(toast => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => hideToast(toast.id)}
+        />
+      ))}
+
       <div className="signup-background">
         <div className="grid-overlay"></div>
       </div>
@@ -106,28 +134,33 @@ export default function Signup() {
         </div>
 
         <form onSubmit={handleSubmit} className="signup-form">
+          {/* USERNAME ALANI (AD SOYAD YERİNE) */}
           <div className="form-group">
             <label 
-              htmlFor="name" 
-              className={`form-label ${focusedField === 'name' ? 'focused' : ''}`}
+              htmlFor="username" 
+              className={`form-label ${focusedField === 'username' ? 'focused' : ''}`}
             >
-              Ad Soyad
+              Kullanıcı Adı
             </label>
             <input
               type="text"
-              id="name"
-              name="name"
-              value={formData.name}
+              id="username"
+              name="username"
+              value={formData.username}
               onChange={handleChange}
-              onFocus={() => setFocusedField('name')}
+              onFocus={() => setFocusedField('username')}
               onBlur={() => setFocusedField(null)}
               className="form-input"
-              placeholder="Ahmet Yılmaz"
+              placeholder="kullanici_adi"
               disabled={isLoading}
-              autoComplete="name"
+              autoComplete="username"
             />
+            <div className="input-hint">
+              3-30 karakter, sadece harf, rakam, - ve _
+            </div>
           </div>
 
+          {/* EMAIL ALANI */}
           <div className="form-group">
             <label 
               htmlFor="email" 
@@ -150,6 +183,7 @@ export default function Signup() {
             />
           </div>
 
+          {/* PASSWORD ALANI */}
           <div className="form-group">
             <label 
               htmlFor="password" 
@@ -181,8 +215,12 @@ export default function Signup() {
                 <span className="strength-label">{passwordStrength.label}</span>
               </div>
             )}
+            <div className="input-hint">
+              Min 8 karakter, 1 büyük harf, 1 rakam, 1 özel karakter
+            </div>
           </div>
 
+          {/* CONFIRM PASSWORD ALANI */}
           <div className="form-group">
             <label 
               htmlFor="confirmPassword" 

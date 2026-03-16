@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { validateEmail } from '../../../utils/validators';
+import { validateIdentifier } from '../../../utils/validators';
 import { useToast } from '../../../hooks/useToast';
 import Toast from '../../../components/Toast';
 import './Login.css';
@@ -9,7 +9,7 @@ export default function Login() {
   const navigate = useNavigate();
   const { toasts, showToast, hideToast } = useToast();
   const [formData, setFormData] = useState({
-    email: '',
+    identifier: '',  // ← DEĞİŞTİ: email → identifier
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -23,73 +23,87 @@ export default function Login() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError('');
-  setIsLoading(true);
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
 
-  // Validation
-  if (!formData.email || !formData.password) {
-    setError('Tüm alanlar zorunludur');
-    setIsLoading(false);
-    return;
-  }
+    // Validation
+    const identifierValidation = validateIdentifier(formData.identifier);
+    if (!identifierValidation.isValid) {
+      setError(identifierValidation.error || 'Geçersiz giriş');
+      setIsLoading(false);
+      return;
+    }
 
-  if (!validateEmail(formData.email)) {
-    setError('Geçerli bir e-posta adresi giriniz');
-    setIsLoading(false);
-    return;
-  }
+    if (!formData.password) {
+      setError('Şifre boş olamaz');
+      setIsLoading(false);
+      return;
+    }
 
-  // Simulate API call
-  setTimeout(() => {
-    console.log('Login submitted:', formData);
-    
-    // Mock başarılı giriş
-    localStorage.setItem('mockUser', JSON.stringify({
-      email: formData.email,
-      name: 'Test Kullanıcı'
-    }));
-    
-    setIsLoading(false);
-    
-    // Toast göster
-    showToast('Giriş başarılı! Hoş geldiniz.', 'success');
-    
-    // 2 saniye sonra yönlendir (toast görsün diye)
-    setTimeout(() => {
-      // navigate('/dashboard');
-    }, 2000);
-  }, 1500);
-};
+    try {
+      // Backend'e gönder
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // ← Cookie için önemli!
+        body: JSON.stringify({
+          identifier: formData.identifier.trim(),
+          password: formData.password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Giriş başarısız');
+      }
+
+      // Başarılı giriş
+      // Access token'ı localStorage'a kaydet
+      if (data.access_token) {
+        localStorage.setItem('access_token', data.access_token);
+      }
+
+      setIsLoading(false);
+      showToast('Giriş başarılı! Hoş geldiniz.', 'success');
+
+      // Dashboard'a yönlendir
+      setTimeout(() => {
+        navigate('/dashboard'); // veya ana sayfaya: navigate('/')
+      }, 1500);
+
+    } catch (err) {
+      setIsLoading(false);
+      const errorMessage = err instanceof Error ? err.message : 'Bir hata oluştu';
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
+    }
+  };
 
   const handleGitHubLogin = () => {
     console.log('GitHub ile giriş başlatıldı');
     showToast('GitHub OAuth entegrasyonu için backend gereklidir', 'info');
     
-    // Mock GitHub login
-    setTimeout(() => {
-      localStorage.setItem('mockUser', JSON.stringify({
-        email: 'github@user.com',
-        name: 'GitHub User',
-        provider: 'github'
-      }));
-      showToast('GitHub ile giriş başarılı!', 'success');
-    }, 1000);
+    // GitHub OAuth için backend endpoint'i (gelecekte)
+    // window.location.href = `${import.meta.env.VITE_API_URL}/auth/github`;
   };
 
-return (
-  <div className="login-container">
-    {/* Toast Container */}
-    {toasts.map(toast => (
-      <Toast
-        key={toast.id}
-        message={toast.message}
-        type={toast.type}
-        onClose={() => hideToast(toast.id)}
-      />
-    ))}
-    
-    <div className="login-background">
+  return (
+    <div className="login-container">
+      {/* Toast Container */}
+      {toasts.map(toast => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => hideToast(toast.id)}
+        />
+      ))}
+      
+      <div className="login-background">
         <div className="grid-overlay"></div>
       </div>
 
@@ -103,28 +117,30 @@ return (
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
+          {/* IDENTIFIER ALANI (Email veya Username) */}
           <div className="form-group">
             <label 
-              htmlFor="email" 
-              className={`form-label ${focusedField === 'email' ? 'focused' : ''}`}
+              htmlFor="identifier" 
+              className={`form-label ${focusedField === 'identifier' ? 'focused' : ''}`}
             >
-              E-posta Adresi
+              E-posta veya Kullanıcı Adı
             </label>
             <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
+              type="text"
+              id="identifier"
+              name="identifier"
+              value={formData.identifier}
               onChange={handleChange}
-              onFocus={() => setFocusedField('email')}
+              onFocus={() => setFocusedField('identifier')}
               onBlur={() => setFocusedField(null)}
               className="form-input"
-              placeholder="ornek@email.com"
+              placeholder="kullaniciadi veya email@example.com"
               disabled={isLoading}
-              autoComplete="email"
+              autoComplete="username"
             />
           </div>
 
+          {/* PASSWORD ALANI */}
           <div className="form-group">
             <label 
               htmlFor="password" 
