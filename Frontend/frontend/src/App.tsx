@@ -1,18 +1,20 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-
-// TROUBLESHOOTING.md yapısına göre importlar:
-import Login from './pages/auth/Login/Login';
-import Signup from './pages/auth/Signup/Signup';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Login from './pages/auth/Login';
+import Signup from './pages/auth/Signup';
 import ForgotPassword from './pages/auth/ForgotPassword';
+import EmailVerification from './pages/auth/EmailVerification';
+import ResetPassword from './pages/auth/ResetPassword';  // ← YENİ
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/verify-email" element={<EmailVerification />} />  {/* ← YENİ */}
+        <Route path="/" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />  {/* ← YENİ */}
       </Routes>
     </BrowserRouter>
   );

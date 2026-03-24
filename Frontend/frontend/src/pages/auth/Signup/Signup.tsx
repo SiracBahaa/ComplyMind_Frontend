@@ -91,12 +91,18 @@ export default function Signup() {
         throw new Error(data.message || 'Kayıt başarısız');
       }
 
+
       // Başarılı kayıt
       setIsLoading(false);
-      showToast('Hesabınız başarıyla oluşturuldu!', 'success');
-      
+
+      // Email'i localStorage'a kaydet
+      localStorage.setItem('pendingVerificationEmail', formData.email);
+
+      showToast('Hesabınız oluşturuldu! Lütfen email adresinizi doğrulayın.', 'success');
+
+      // Email verification sayfasına yönlendir
       setTimeout(() => {
-        navigate('/login');
+        navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
       }, 2000);
 
     } catch (err) {
