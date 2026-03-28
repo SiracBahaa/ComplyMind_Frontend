@@ -1,0 +1,236 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --color-bg: #0a0a0a;
+  --color-surface: #141414;
+  --color-border: #2a2a2a;
+  --color-text: #ffffff;
+  --color-text-secondary: #a0a0a0;
+  --color-accent: #00ff88;
+  --color-error: #ff4444;
+  --font-display: 'Archivo', -apple-system, sans-serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+.github-callback-container {
+  min-height: 100vh;
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.callback-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: 
+    radial-gradient(circle at 80% 20%, rgba(0, 255, 136, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 20% 80%, rgba(0, 255, 136, 0.05) 0%, transparent 50%);
+}
+
+.grid-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(var(--color-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
+  background-size: 50px 50px;
+  opacity: 0.3;
+  animation: gridPulse 20s ease-in-out infinite;
+}
+
+@keyframes gridPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.15; }
+}
+
+.callback-card {
+  position: relative;
+  z-index: 1;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 3rem;
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 20px 40px rgba(0, 0, 0, 0.4);
+  animation: cardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Status Icons */
+.status-icon {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 2rem;
+}
+
+.loading-icon .spinner {
+  width: 120px;
+  height: 120px;
+  animation: rotate 2s linear infinite;
+}
+
+.spinner-path {
+  stroke: var(--color-accent);
+  stroke-linecap: round;
+  animation: dash 1.5s ease-in-out infinite;
+}
+
+@keyframes rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
+}
+
+.error-icon {
+  color: var(--color-error);
+  animation: errorShake 0.5s ease;
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  75% { transform: translateX(10px); }
+}
+
+/* Title */
+.callback-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+.title-line {
+  display: block;
+  color: var(--color-text);
+  animation: titleSlide 0.8s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.title-line:first-child {
+  animation-delay: 0.2s;
+}
+
+.title-line-accent {
+  color: var(--color-accent);
+  animation-delay: 0.3s;
+}
+
+.title-line-error {
+  color: var(--color-error);
+  animation-delay: 0.3s;
+}
+
+@keyframes titleSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Messages */
+.status-message {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 2rem;
+  animation: fadeIn 0.6s ease-out 0.4s backwards;
+}
+
+.error-message {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--color-error);
+  margin-bottom: 1rem;
+  animation: fadeIn 0.6s ease-out 0.4s backwards;
+}
+
+.redirect-notice {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Footer */
+.callback-footer {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  opacity: 0.5;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .callback-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .callback-title {
+    font-size: 1.75rem;
+  }
+
+  .status-icon {
+    width: 100px;
+    height: 100px;
+  }
+
+  .loading-icon .spinner {
+    width: 100px;
+    height: 100px;
+  }
+}

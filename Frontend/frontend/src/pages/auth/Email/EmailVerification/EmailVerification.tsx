@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useToast } from '../../../hooks/useToast';
-import Toast from '../../../components/Toast';
+import { useToast } from '../../../../hooks/useToast';
+import Toast from '../../../../components/Toast';
 import './EmailVerification.css';
 
 export default function EmailVerification() {

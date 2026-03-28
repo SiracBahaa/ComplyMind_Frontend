@@ -102,7 +102,7 @@ export default function Signup() {
 
       // Email verification sayfasına yönlendir
       setTimeout(() => {
-        navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+        navigate(`/email-verification?email=${encodeURIComponent(formData.email)}`);
       }, 2000);
 
     } catch (err) {
@@ -157,7 +157,7 @@ export default function Signup() {
               onFocus={() => setFocusedField('username')}
               onBlur={() => setFocusedField(null)}
               className="form-input"
-              placeholder="kullanici_adi"
+              placeholder="Kullanıcı adınızı giriniz"
               disabled={isLoading}
               autoComplete="username"
             />
@@ -183,7 +183,7 @@ export default function Signup() {
               onFocus={() => setFocusedField('email')}
               onBlur={() => setFocusedField(null)}
               className="form-input"
-              placeholder="ornek@email.com"
+              placeholder="example@email.com"
               disabled={isLoading}
               autoComplete="email"
             />

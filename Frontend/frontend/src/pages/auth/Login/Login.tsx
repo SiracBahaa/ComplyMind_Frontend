@@ -84,12 +84,10 @@ export default function Login() {
   };
 
   const handleGitHubLogin = () => {
-    console.log('GitHub ile giriş başlatıldı');
-    showToast('GitHub OAuth entegrasyonu için backend gereklidir', 'info');
-    
-    // GitHub OAuth için backend endpoint'i (gelecekte)
-    // window.location.href = `${import.meta.env.VITE_API_URL}/auth/github`;
+    // Backend'deki GitHub OAuth endpoint'ine yönlendir
+    window.location.href = `${import.meta.env.VITE_API_URL}/auth/github`;
   };
+
 
   return (
     <div className="login-container">
@@ -134,7 +132,7 @@ export default function Login() {
               onFocus={() => setFocusedField('identifier')}
               onBlur={() => setFocusedField(null)}
               className="form-input"
-              placeholder="kullaniciadi veya email@example.com"
+              placeholder="Kullanıcı Adı veya email@example.com"
               disabled={isLoading}
               autoComplete="username"
             />
