@@ -1,50 +1,115 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../hooks/useToast';
+import Toast from '../../components/Toast';
 import './Dashboard.css';
 
-interface UserInfo {
+interface UserProfile {
+  id: string;
   username: string;
   email: string;
-  display_name?: string;
+  display_name: string | null;
+  email_verified: boolean;
+  status: string;
+  created_at: string;
+  last_login_at: string | null;
 }
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [user, setUser] = useState<UserInfo | null>(null);
+  const { toasts, showToast, hideToast } = useToast();
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Token kontrolü
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
     const token = localStorage.getItem('access_token');
+    
     if (!token) {
       navigate('/login');
       return;
     }
 
-    // Mock user data (gerçek uygulamada API'den gelecek)
-    setUser({
-      username: 'siracbaha',
-      email: 'sirac@complymind.com',
-      display_name: 'Sıraç Baha'
-    });
-    setIsLoading(false);
-  }, [navigate]);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/users/me`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
 
-  const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    navigate('/login');
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token geçersiz, login'e yönlendir
+          localStorage.removeItem('access_token');
+          navigate('/login');
+          return;
+        }
+        throw new Error('Profil bilgileri alınamadı');
+      }
+
+      const data = await response.json();
+      setUser(data);
+      
+    } catch (err) {
+      console.error('Profile fetch error:', err);
+      showToast('Profil bilgileri yüklenemedi', 'error');
+      
+      // Token sorunu varsa login'e yönlendir
+      setTimeout(() => {
+        localStorage.removeItem('access_token');
+        navigate('/login');
+      }, 2000);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      // Backend'e logout isteği gönder
+      await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      // Token'ı temizle ve login'e yönlendir
+      localStorage.removeItem('access_token');
+      navigate('/login');
+    }
   };
 
   if (isLoading) {
     return (
       <div className="dashboard-loading">
         <div className="spinner-large"></div>
+        <p className="loading-text">Yükleniyor...</p>
       </div>
     );
   }
 
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="dashboard-container">
+      {toasts.map(toast => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => hideToast(toast.id)}
+        />
+      ))}
+
       {/* Header */}
       <header className="dashboard-header">
         <div className="header-left">
@@ -55,12 +120,24 @@ export default function Dashboard() {
         <div className="header-right">
           <div className="user-info">
             <div className="user-avatar">
-              {user?.display_name?.charAt(0) || user?.username?.charAt(0) || 'U'}
+              {user.display_name?.charAt(0).toUpperCase() || 
+               user.username?.charAt(0).toUpperCase() || 
+               'U'}
             </div>
             <div className="user-details">
-              <span className="user-name">{user?.display_name || user?.username}</span>
-              <span className="user-email">{user?.email}</span>
+              <span className="user-name">
+                {user.display_name || user.username}
+              </span>
+              <span className="user-email">{user.email}</span>
             </div>
+            {user.email_verified && (
+              <div className="verified-badge" title="Email doğrulanmış">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <polyline points="22 4 12 14.01 9 11.01" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            )}
           </div>
           <button onClick={handleLogout} className="logout-button">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -117,7 +194,7 @@ export default function Dashboard() {
               </svg>
               Denetimler
             </a>
-            <a href="#" className="nav-item">
+            <a href="/settings" className="nav-item">  {/* href="#" yerine */}
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
@@ -131,11 +208,16 @@ export default function Dashboard() {
           {/* Welcome Section */}
           <section className="welcome-section">
             <h1 className="page-title">
-              Hoş geldin, <span className="accent">{user?.display_name || user?.username}</span>
+              Hoş geldin, <span className="accent">{user.display_name || user.username}</span>
             </h1>
             <p className="page-subtitle">
               İşte bugünün uyumluluk durumu özeti
             </p>
+            {user.last_login_at && (
+              <p className="last-login">
+                Son giriş: {new Date(user.last_login_at).toLocaleString('tr-TR')}
+              </p>
+            )}
           </section>
 
           {/* Stats Grid */}
@@ -285,7 +367,7 @@ export default function Dashboard() {
                 </div>
                 <div className="activity-content">
                   <span className="activity-text">
-                    <strong>Ahmet Yılmaz</strong> "ISO 27001 İç Denetim" görevini tamamladı
+                    <strong>{user.display_name || user.username}</strong> "ISO 27001 İç Denetim" görevini tamamladı
                   </span>
                   <span className="activity-time">15 dakika önce</span>
                 </div>

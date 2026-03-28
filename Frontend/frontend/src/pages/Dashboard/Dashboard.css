@@ -83,6 +83,7 @@
   justify-content: center;
   font-weight: 700;
   font-size: 1.125rem;
+  flex-shrink: 0;
 }
 
 .user-details {
@@ -100,6 +101,25 @@
   font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--color-text-secondary);
+}
+
+/* Verified Badge */
+.verified-badge {
+  width: 24px;
+  height: 24px;
+  background: rgba(0, 255, 136, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-success);
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.verified-badge:hover {
+  background: rgba(0, 255, 136, 0.2);
+  transform: scale(1.1);
 }
 
 .logout-button {
@@ -194,6 +214,15 @@
   font-family: var(--font-mono);
   font-size: 0.875rem;
   color: var(--color-text-secondary);
+}
+
+/* Last Login */
+.last-login {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.5rem;
+  opacity: 0.7;
 }
 
 /* Stats Grid */
@@ -501,9 +530,11 @@
 .dashboard-loading {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   background: var(--color-bg);
+  gap: 1rem;
 }
 
 .spinner-large {
@@ -517,6 +548,12 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
 }
 
 /* Responsive */
@@ -553,5 +590,15 @@
 
   .page-title {
     font-size: 1.5rem;
+  }
+
+  .verified-badge {
+    width: 20px;
+    height: 20px;
+  }
+
+  .verified-badge svg {
+    width: 12px;
+    height: 12px;
   }
 }
