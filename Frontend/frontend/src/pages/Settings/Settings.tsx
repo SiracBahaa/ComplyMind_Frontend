@@ -14,8 +14,8 @@ interface UserProfile {
   status: string;
   created_at: string;
   last_login_at: string | null;
-  has_password: boolean; // ← Backend'den geliyor
-  oauth_providers: string[]; // ← Backend'den geliyor ['github'] veya []
+  has_password: boolean;
+  oauth_providers: string[];
 }
 
 export default function Settings() {
@@ -71,10 +71,7 @@ export default function Settings() {
       setUser(data);
       setDisplayName(data.display_name || '');
       
-      // Debug
       console.log('✅ User Profile:', data);
-      console.log('Has Password:', data.has_password);
-      console.log('OAuth Providers:', data.oauth_providers);
       
     } catch (err) {
       console.error('Profile fetch error:', err);
@@ -170,12 +167,10 @@ export default function Settings() {
 
       showToast('Şifre başarıyla değiştirildi! Yeniden giriş yapın.', 'success');
       
-      // Clear form
       setCurrentPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
       
-      // Logout after 2 seconds
       setTimeout(() => {
         localStorage.removeItem('access_token');
         navigate('/login');
@@ -190,7 +185,7 @@ export default function Settings() {
     }
   };
 
-  // Delete Account
+// Delete Account
   const handleDeleteAccount = async () => {
     if (deleteConfirmation !== 'DELETE') {
       showToast('Lütfen "DELETE" yazarak onaylayın', 'error');
@@ -198,7 +193,17 @@ export default function Settings() {
     }
 
     if (!deletePassword) {
-      showToast('Şifrenizi girin', 'error');
+      if (user?.has_password) {
+        showToast('Şifrenizi girin', 'error');
+      } else {
+        showToast('Kullanıcı adınızı girin', 'error');
+      }
+      return;
+    }
+
+    // Username kontrolü (OAuth kullanıcıları için) - FRONTEND VALIDATION
+    if (!user?.has_password && deletePassword.toLowerCase() !== user?.username.toLowerCase()) {
+      showToast('Kullanıcı adı hatalı', 'error');
       return;
     }
 
@@ -206,6 +211,12 @@ export default function Settings() {
 
     try {
       const token = localStorage.getItem('access_token');
+      
+      // Backend'e gönderilecek body
+      const requestBody = user?.has_password 
+        ? { password: deletePassword }           // ← Şifre varsa
+        : { confirmation: deletePassword };      // ← OAuth ise username (confirmation olarak)
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/users/me/delete`, {
         method: 'POST',
         headers: {
@@ -213,9 +224,7 @@ export default function Settings() {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({
-          password: deletePassword
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -225,7 +234,6 @@ export default function Settings() {
 
       showToast('Hesabınız kalıcı olarak silindi', 'success');
       
-      // Logout and redirect
       setTimeout(() => {
         localStorage.removeItem('access_token');
         navigate('/signup');
@@ -253,7 +261,6 @@ export default function Settings() {
     return null;
   }
 
-  // Helper: OAuth provider isimleri
   const getProviderName = (provider: string) => {
     const names: Record<string, string> = {
       'github': 'GitHub',
@@ -263,7 +270,6 @@ export default function Settings() {
     return names[provider] || provider;
   };
 
-  // Helper: OAuth provider iconları
   const getProviderIcon = (provider: string) => {
     if (provider === 'github') {
       return (
@@ -286,7 +292,6 @@ export default function Settings() {
         />
       ))}
 
-      {/* Header */}
       <header className="settings-header">
         <button onClick={() => navigate('/dashboard')} className="back-button">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -301,7 +306,6 @@ export default function Settings() {
         </h1>
       </header>
 
-      {/* Main Content */}
       <div className="settings-content">
         {/* Account Info */}
         <section className="settings-section">
@@ -384,7 +388,7 @@ export default function Settings() {
           </form>
         </section>
 
-        {/* OAuth Connections - Varsa göster */}
+        {/* OAuth Connections */}
         {user.oauth_providers.length > 0 && (
           <section className="settings-section">
             <div className="section-header">
@@ -428,7 +432,7 @@ export default function Settings() {
           </section>
         )}
 
-        {/* Change Password - Sadece şifresi varsa göster */}
+        {/* Change Password - Only if has_password is true */}
         {user.has_password && (
           <section className="settings-section">
             <div className="section-header">
@@ -576,20 +580,42 @@ export default function Settings() {
                   disabled={isDeleting}
                 />
               </div>
-              <div className="form-group">
-                <label htmlFor="deletePassword" className="form-label">
-                  Şifreniz
-                </label>
-                <input
-                  type="password"
-                  id="deletePassword"
-                  value={deletePassword}
-                  onChange={(e) => setDeletePassword(e.target.value)}
-                  className="form-input"
-                  placeholder="••••••••"
-                  disabled={isDeleting}
-                />
-              </div>
+              
+              {/* Şifre varsa şifre, yoksa username */}
+              {user.has_password ? (
+                <div className="form-group">
+                  <label htmlFor="deletePassword" className="form-label">
+                    Şifreniz
+                  </label>
+                  <input
+                    type="password"
+                    id="deletePassword"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    className="form-input"
+                    placeholder="••••••••"
+                    disabled={isDeleting}
+                  />
+                </div>
+              ) : (
+                <div className="form-group">
+                  <label htmlFor="deleteUsername" className="form-label">
+                    Kullanıcı Adınız
+                  </label>
+                  <input
+                    type="text"
+                    id="deleteUsername"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    className="form-input"
+                    placeholder={user.username}
+                    disabled={isDeleting}
+                  />
+                  <span className="form-hint">
+                    Güvenlik için kullanıcı adınızı girin: <strong>{user.username}</strong>
+                  </span>
+                </div>
+              )}
             </div>
             <div className="modal-footer">
               <button
