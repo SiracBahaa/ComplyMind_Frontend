@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
+import { AnalysisDashboard, AnalysisDetail } from './pages/Analysis';
 import EmailVerification from './pages/auth/Email/EmailVerification';
 import EmailVerified from './pages/auth/Email/EmailVerified';
 import VerifyEmailHandler from './pages/auth/Email/VerifyEmailHandler';
@@ -9,6 +10,7 @@ import ResetPassword from './pages/auth/ResetPassword';
 import GitHubCallback from './pages/auth/GitHubCallback';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
+
 
 function App() {
   return (
@@ -25,6 +27,8 @@ function App() {
         <Route path="/auth/oauth-callback" element={<GitHubCallback />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/analysis" element={<AnalysisDashboard />} />
+        <Route path="/analysis/:analysisId" element={<AnalysisDetail />} />
       </Routes>
     </Router>
   );

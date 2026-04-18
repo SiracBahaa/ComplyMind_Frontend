@@ -43,30 +43,14 @@ export default function Dashboard() {
   const [isLoadingRepos, setIsLoadingRepos] = useState(false);
   const [isSyncingRepos, setIsSyncingRepos] = useState(false);
 
-  const mapBackendRepos = (backendRepos: any[]): Repository[] => {
-    return backendRepos.map((repo: any) => ({
-      id: repo.repo_id ?? repo.id,
-      name: repo.name || repo.repo_full_name?.split('/')[1] || 'Unknown',
-      full_name: repo.full_name || repo.repo_full_name || 'Unknown/Unknown',
-      private: repo.private ?? repo.is_private ?? false,
-      html_url:
-        repo.html_url ||
-        `https://github.com/${repo.full_name || repo.repo_full_name}`,
-      description: repo.description || null,
-      default_branch: repo.default_branch || 'main',
-      updated_at: repo.updated_at || new Date().toISOString(),
-    }));
-  };
-
   useEffect(() => {
     fetchUserProfile();
     fetchGitHubStatus();
     fetchRepos();
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-
     if (params.get('github_connected') === 'true') {
       showToast('GitHub başarıyla bağlandı!', 'success');
       fetchGitHubStatus();
@@ -106,7 +90,6 @@ export default function Dashboard() {
     } catch (err) {
       console.error('Profile fetch error:', err);
       showToast('Profil bilgileri yüklenemedi', 'error');
-
       setTimeout(() => {
         localStorage.removeItem('access_token');
         navigate('/login');
@@ -133,7 +116,6 @@ export default function Dashboard() {
       if (response.ok) {
         const data = await response.json();
         setGithubStatus(data);
-        console.log('✅ GitHub Status:', data);
       }
     } catch (err) {
       console.error('GitHub status error:', err);
@@ -165,7 +147,19 @@ export default function Dashboard() {
       }
 
       const data: any = await response.json();
-      setRepos(mapBackendRepos(data.repos || []));
+
+      const transformedRepos = data.repos.map((repo: any) => ({
+        id: repo.repo_id || repo.id,
+        name: repo.name || repo.repo_full_name?.split('/')[1] || 'Unknown',
+        full_name: repo.full_name || repo.repo_full_name || 'Unknown/Unknown',
+        private: repo.private ?? repo.is_private ?? false,
+        html_url: repo.html_url || `https://github.com/${repo.repo_full_name || repo.full_name}`,
+        description: repo.description || null,
+        default_branch: repo.default_branch || 'main',
+        updated_at: repo.updated_at || new Date().toISOString(),
+      }));
+
+      setRepos(transformedRepos);
     } catch (err) {
       console.error('Repos fetch error:', err);
       setRepos([]);
@@ -200,32 +194,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleAddRepo = async () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/github/install`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('GitHub App URL alınamadı');
-      }
-
-      const data = await response.json();
-      window.location.href = data.installation_url;
-    } catch (err) {
-      console.error('Add repo error:', err);
-      showToast('Repo ekleme başarısız', 'error');
-    }
-  };
-
   const handleSyncRepos = async () => {
     const token = localStorage.getItem('access_token');
     if (!token) return;
@@ -247,7 +215,19 @@ export default function Dashboard() {
       }
 
       const data: any = await response.json();
-      setRepos(mapBackendRepos(data.repos || []));
+
+      const transformedRepos = data.repos.map((repo: any) => ({
+        id: repo.repo_id || repo.id,
+        name: repo.name || repo.repo_full_name?.split('/')[1] || 'Unknown',
+        full_name: repo.full_name || repo.repo_full_name || 'Unknown/Unknown',
+        private: repo.private ?? repo.is_private ?? false,
+        html_url: repo.html_url || `https://github.com/${repo.repo_full_name || repo.full_name}`,
+        description: repo.description || null,
+        default_branch: repo.default_branch || 'main',
+        updated_at: repo.updated_at || new Date().toISOString(),
+      }));
+
+      setRepos(transformedRepos);
       await fetchGitHubStatus();
       showToast('Repolar başarıyla senkronize edildi!', 'success');
     } catch (err) {
@@ -342,7 +322,7 @@ export default function Dashboard() {
       <div className="dashboard-content">
         <aside className="dashboard-sidebar">
           <nav className="sidebar-nav">
-            <a href="#" className="nav-item active">
+            <a href="/dashboard" className="nav-item active">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <rect x="3" y="3" width="7" height="7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 <rect x="14" y="3" width="7" height="7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -350,6 +330,14 @@ export default function Dashboard() {
                 <rect x="3" y="14" width="7" height="7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               Dashboard
+            </a>
+
+            <a href="/analysis" className="nav-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M12 6v6l4 2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Kod Analizi
             </a>
 
             <a href="#" className="nav-item">
@@ -466,49 +454,36 @@ export default function Dashboard() {
             <div className="content-card">
               <div className="card-header">
                 <h2 className="card-title">GitHub Repoları</h2>
-
-                <div className="card-header-actions">
-                  {githubStatus.connected && (
-                    <button onClick={handleAddRepo} className="add-repo-button">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <line x1="12" y1="5" x2="12" y2="19" strokeWidth="2" strokeLinecap="round" />
-                        <line x1="5" y1="12" x2="19" y2="12" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                      Repo Ekle
-                    </button>
-                  )}
-
-                  {githubStatus.connected ? (
-                    <button
-                      onClick={handleSyncRepos}
-                      className="sync-button"
-                      disabled={isSyncingRepos}
-                    >
-                      {isSyncingRepos ? (
-                        <>
-                          <span className="spinner-small"></span>
-                          Senkronize ediliyor...
-                        </>
-                      ) : (
-                        <>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <polyline points="23 4 23 10 17 10" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <polyline points="1 20 1 14 7 14" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          Senkronize Et
-                        </>
-                      )}
-                    </button>
-                  ) : (
-                    <button onClick={handleConnectGitHub} className="connect-github-button">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-                      </svg>
-                      GitHub'ı Bağla
-                    </button>
-                  )}
-                </div>
+                {githubStatus.connected ? (
+                  <button
+                    onClick={handleSyncRepos}
+                    className="sync-button"
+                    disabled={isSyncingRepos}
+                  >
+                    {isSyncingRepos ? (
+                      <>
+                        <span className="spinner-small"></span>
+                        Senkronize ediliyor...
+                      </>
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                          <polyline points="23 4 23 10 17 10" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          <polyline points="1 20 1 14 7 14" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Senkronize Et
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button onClick={handleConnectGitHub} className="connect-github-button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+                    </svg>
+                    GitHub'ı Bağla
+                  </button>
+                )}
               </div>
 
               {isLoadingRepos ? (
@@ -548,7 +523,6 @@ export default function Dashboard() {
                             <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         </div>
-
                         <div className="repo-info">
                           <h3 className="repo-name">{repo.name}</h3>
                           {repo.private && <span className="repo-badge private">Private</span>}
@@ -601,7 +575,6 @@ export default function Dashboard() {
                 <h2 className="card-title">Son Görevler</h2>
                 <a href="#" className="card-link">Tümünü Gör →</a>
               </div>
-
               <div className="task-list">
                 <div className="task-item">
                   <div className="task-checkbox checked"></div>
@@ -610,7 +583,6 @@ export default function Dashboard() {
                     <span className="task-meta">2 saat önce tamamlandı</span>
                   </div>
                 </div>
-
                 <div className="task-item">
                   <div className="task-checkbox checked"></div>
                   <div className="task-info">
@@ -618,7 +590,6 @@ export default function Dashboard() {
                     <span className="task-meta">5 saat önce tamamlandı</span>
                   </div>
                 </div>
-
                 <div className="task-item">
                   <div className="task-checkbox"></div>
                   <div className="task-info">
@@ -626,7 +597,6 @@ export default function Dashboard() {
                     <span className="task-meta">Yarın teslim</span>
                   </div>
                 </div>
-
                 <div className="task-item">
                   <div className="task-checkbox"></div>
                   <div className="task-info">
@@ -642,7 +612,6 @@ export default function Dashboard() {
                 <h2 className="card-title">Risk Durumu</h2>
                 <a href="#" className="card-link">Detaylar →</a>
               </div>
-
               <div className="risk-overview">
                 <div className="risk-item high">
                   <div className="risk-bar">
@@ -653,7 +622,6 @@ export default function Dashboard() {
                     <span className="risk-count">3</span>
                   </div>
                 </div>
-
                 <div className="risk-item medium">
                   <div className="risk-bar">
                     <div className="risk-fill" style={{ width: '50%' }}></div>
@@ -663,7 +631,6 @@ export default function Dashboard() {
                     <span className="risk-count">7</span>
                   </div>
                 </div>
-
                 <div className="risk-item low">
                   <div className="risk-bar">
                     <div className="risk-fill" style={{ width: '25%' }}></div>
@@ -681,7 +648,6 @@ export default function Dashboard() {
             <div className="card-header">
               <h2 className="card-title">Son Aktiviteler</h2>
             </div>
-
             <div className="activity-feed">
               <div className="activity-item">
                 <div className="activity-icon success">
