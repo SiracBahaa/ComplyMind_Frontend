@@ -28,7 +28,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/analysis" element={<AnalysisDashboard />} />
-        <Route path="/analysis/:analysisId" element={<AnalysisDetail />} />
+        <Route path="/analysis/project/:projectId" element={<AnalysisDetail />} />
       </Routes>
     </Router>
   );
