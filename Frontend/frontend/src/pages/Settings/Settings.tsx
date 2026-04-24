@@ -292,19 +292,6 @@ export default function Settings() {
         />
       ))}
 
-      <header className="settings-header">
-        <button onClick={() => navigate('/dashboard')} className="back-button">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <line x1="19" y1="12" x2="5" y2="12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <polyline points="12 19 5 12 12 5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Dashboard'a Dön
-        </button>
-        <h1 className="settings-title">
-          <span className="title-line">Hesap</span>
-          <span className="title-line title-line-accent">Ayarları</span>
-        </h1>
-      </header>
 
       <div className="settings-content">
         {/* Account Info */}

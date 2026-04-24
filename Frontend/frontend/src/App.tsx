@@ -10,25 +10,28 @@ import ResetPassword from './pages/auth/ResetPassword';
 import GitHubCallback from './pages/auth/GitHubCallback';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
-
+import Layout from './components/Layout';
 
 function App() {
   return (
     <Router>
       <Routes>
+        {/* Auth sayfaları — layout yok */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/email-verification" element={<EmailVerification />} />
-        <Route path="/auth/verify-email" element={<VerifyEmailHandler />} />  {/* token işler → email-verified'a yönlendirir */}
-        <Route path="/auth/email-verified" element={<EmailVerified />} />     {/* sonuç ekranı */}
+        <Route path="/auth/verify-email" element={<VerifyEmailHandler />} />
+        <Route path="/auth/email-verified" element={<EmailVerified />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/auth/oauth-callback" element={<GitHubCallback />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/analysis" element={<AnalysisDashboard />} />
-        <Route path="/analysis/project/:projectId" element={<AnalysisDetail />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/* Protected sayfalar — Layout (header + sidebar) ile sarılı */}
+        <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
+        <Route path="/settings" element={<Layout><Settings /></Layout>} />
+        <Route path="/analysis" element={<Layout><AnalysisDashboard /></Layout>} />
+        <Route path="/analysis/project/:projectId" element={<Layout><AnalysisDetail /></Layout>} />
       </Routes>
     </Router>
   );
